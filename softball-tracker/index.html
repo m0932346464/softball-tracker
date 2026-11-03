@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>壘球落點紀錄表</title>
+  <link rel="icon" href="images/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="images/icon.svg" alt="" width="28" height="28">
+      <span>壘球落點紀錄表</span>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab-btn" data-tab="record" role="tab">紀錄</button>
+      <button class="tab-btn" data-tab="analysis" role="tab">分析</button>
+      <button class="tab-btn" data-tab="manage" role="tab">球隊／比賽</button>
+      <button class="tab-btn" data-tab="data" role="tab">資料備份</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===== 紀錄 ===== -->
+    <section id="tab-record" class="tab-panel">
+      <div class="two-col">
+        <div class="card field-card">
+          <div id="stepHint" class="step-hint"></div>
+          <svg id="recordField" class="field" aria-label="球場，點選紀錄落點"></svg>
+          <div class="legend" id="recordLegend"></div>
+        </div>
+
+        <div class="panel">
+          <div class="card">
+            <label class="card-title" for="gameSelect">目前比賽</label>
+            <select id="gameSelect"></select>
+            <p id="noGameHint" class="hint" hidden>
+              還沒有比賽。請先到「球隊／比賽」建立對手球隊、球員與比賽。
+              <button class="link-btn" data-goto="manage">前往設定 →</button>
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              ① 打者
+              <button id="quickAddToggle" class="link-btn" type="button">＋ 臨時新增打者</button>
+            </div>
+            <form id="quickAddForm" class="inline-form" hidden>
+              <input id="qaNumber" class="num-input" placeholder="背號" inputmode="numeric" maxlength="4">
+              <input id="qaName" placeholder="姓名">
+              <button class="btn" type="submit">加入</button>
+            </form>
+            <div id="batterGrid" class="batter-grid"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">③ 擊球類型</div>
+            <div id="typeBtns" class="chip-row"></div>
+            <div class="card-title">④ 擊球結果</div>
+            <div id="resultBtns" class="chip-row"></div>
+            <button id="saveBtn" class="btn btn-primary btn-big" disabled>儲存這一球</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">沒有落點的打席（點一下就記錄）</div>
+            <div id="quickBtns" class="chip-row"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              本場最近紀錄
+              <button id="undoBtn" class="btn btn-ghost" type="button">↶ 復原上一筆</button>
+            </div>
+            <ol id="recentList" class="recent-list"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 分析 ===== -->
+    <section id="tab-analysis" class="tab-panel" hidden>
+      <div class="card filter-bar">
+        <label>球隊 <select id="anTeam"></select></label>
+        <label>打者 <select id="anPlayer"></select></label>
+        <label>比賽 <select id="anGame"></select></label>
+      </div>
+      <div class="two-col">
+        <div class="card field-card">
+          <div class="layer-toggles">
+            <label><input type="checkbox" id="lyPts" checked> 落點散佈</label>
+            <label><input type="checkbox" id="lyHeat"> 區域熱區</label>
+            <label><input type="checkbox" id="lyDef" checked> 建議守備</label>
+          </div>
+          <svg id="analysisField" class="field" aria-label="落點分析球場"></svg>
+          <div class="legend" id="analysisLegend"></div>
+        </div>
+
+        <div class="panel">
+          <div class="card">
+            <div class="card-title" id="anTitle">統計</div>
+            <div id="statTiles" class="stat-tiles"></div>
+            <div id="insight" class="insight"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">擊球類型（有落點的球）</div>
+            <div id="typeBars" class="bars"></div>
+            <div class="card-title">擊球方向（從本壘看）</div>
+            <div id="dirBars" class="bars"></div>
+          </div>
+          <div class="card" id="playerTableCard">
+            <div class="card-title">全隊打者一覽（點一列看個人）</div>
+            <div class="table-wrap"><table id="playerTable" class="data-table"></table></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 球隊／比賽 ===== -->
+    <section id="tab-manage" class="tab-panel" hidden>
+      <div class="manage-grid">
+        <div class="card">
+          <div class="card-title">1. 球隊</div>
+          <form id="teamForm" class="inline-form">
+            <input id="teamName" placeholder="球隊名稱" required>
+            <button class="btn btn-primary" type="submit">新增球隊</button>
+          </form>
+          <ul id="teamList" class="item-list"></ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">2. 球員</div>
+          <label class="sub-label">選擇球隊 <select id="mpTeam"></select></label>
+          <form id="playerForm" class="inline-form">
+            <input id="playerNumber" class="num-input" placeholder="背號" inputmode="numeric" maxlength="4" required>
+            <input id="playerName" placeholder="姓名" required>
+            <button class="btn btn-primary" type="submit">新增球員</button>
+          </form>
+          <ul id="playerList" class="item-list"></ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">3. 比賽</div>
+          <form id="gameForm" class="stack-form">
+            <label class="sub-label">日期 <input type="date" id="gameDate" required></label>
+            <label class="sub-label">對手球隊 <select id="gameTeam" required></select></label>
+            <label class="sub-label">備註（場地、盃賽名稱） <input id="gameNote" placeholder="選填"></label>
+            <button class="btn btn-primary" type="submit">新增比賽</button>
+          </form>
+          <ul id="gameList" class="item-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 資料備份 ===== -->
+    <section id="tab-data" class="tab-panel" hidden>
+      <div class="manage-grid">
+        <div class="card">
+          <div class="card-title">目前資料</div>
+          <div id="dataSummary" class="stat-tiles"></div>
+          <p class="hint">資料只存在「這台裝置的這個瀏覽器」裡。清除瀏覽器資料或換裝置就會不見，請每場比賽後匯出備份。</p>
+        </div>
+        <div class="card">
+          <div class="card-title">匯出</div>
+          <button id="exportJson" class="btn btn-primary btn-big">匯出完整備份（JSON）</button>
+          <p class="hint">可在其他裝置用「匯入」還原全部資料。</p>
+          <button id="exportCsv" class="btn btn-big">匯出紀錄明細（CSV，可用 Excel 開啟）</button>
+        </div>
+        <div class="card">
+          <div class="card-title">匯入／其他</div>
+          <label class="btn btn-big file-btn">
+            匯入備份（JSON）
+            <input type="file" id="importFile" accept=".json,application/json" hidden>
+          </label>
+          <p class="hint">匯入會<b>取代</b>目前所有資料。</p>
+          <button id="demoBtn" class="btn btn-big">載入示範資料（先試玩看看）</button>
+          <button id="clearBtn" class="btn btn-big btn-danger">清除全部資料</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
