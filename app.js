@@ -9,10 +9,10 @@
 const STORE_KEY = 'softball-spray-v1';
 
 const TYPES = [
-  { id: 'GB', label: '滾地球', color: '#c2410c' },
-  { id: 'LD', label: '平飛球', color: '#dc2626' },
-  { id: 'FB', label: '高飛球', color: '#1d4ed8' },
-  { id: 'PU', label: '小飛球', color: '#7c3aed' },
+  { id: 'GB', label: '滾地球', color: '#fb923c' },
+  { id: 'LD', label: '平飛球', color: '#f43f5e' },
+  { id: 'FB', label: '高飛球', color: '#38bdf8' },
+  { id: 'PU', label: '小飛球', color: '#c084fc' },
 ];
 
 const RESULTS = [
@@ -164,10 +164,16 @@ function wedgePath(r1, r2, a1, a2) {
 function drawField(svg) {
   svg.innerHTML = '';
   svg.setAttribute('viewBox', `0 0 ${G.W} ${G.H}`);
+  // 草地除草條紋
+  const defs = svgEl('defs', {}, svg);
+  const patId = `${svg.id}-grass`;
+  const pat = svgEl('pattern', { id: patId, width: 36, height: 36, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
+  svgEl('rect', { width: 36, height: 36, fill: '#1f6b3c' }, pat);
+  svgEl('rect', { width: 18, height: 36, fill: '#237544' }, pat);
   const bg = svgEl('g', {}, svg);
   svgEl('rect', { x: 0, y: 0, width: G.W, height: G.H, class: 'f-out' }, bg);
   const R = G.FENCE * G.K;
-  svgEl('path', { d: `M${P(0, 0)} L${P(G.FENCE, -45)} A${R} ${R} 0 0 1 ${P(G.FENCE, 45)} Z`, class: 'f-grass' }, bg);
+  svgEl('path', { d: `M${P(0, 0)} L${P(G.FENCE, -45)} A${R} ${R} 0 0 1 ${P(G.FENCE, 45)} Z`, fill: `url(#${patId})` }, bg);
   const RD = 120 * G.K;
   svgEl('path', { d: `M${P(0, 0)} L${P(120, -45)} A${RD} ${RD} 0 0 1 ${P(120, 45)} Z`, class: 'f-dirt' }, bg);
 
@@ -212,7 +218,7 @@ function drawPoint(layer, r, faded) {
   const hit = isHit(r);
   const c = svgEl('circle', {
     cx: x, cy: y, r: hit ? 7 : 6,
-    fill: hit ? color : '#fff',
+    fill: hit ? color : '#0b1322',
     stroke: hit ? '#fff' : color,
     class: 'pt' + (faded ? ' pt-faded' : ''),
   }, layer);
@@ -340,8 +346,9 @@ function addRecord(rec) {
 function initRecordControls() {
   $('#typeBtns').innerHTML = TYPES.map((t) =>
     `<button class="chip" data-id="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.label}</button>`).join('');
-  $('#resultBtns').innerHTML = RESULTS.map((r) => `<button class="chip" data-id="${r.id}">${r.label}</button>`).join('');
-  $('#quickBtns').innerHTML = QUICK.map((r) => `<button class="chip quick" data-id="${r.id}">${r.label}</button>`).join('');
+  const kind = (r) => (r.hit ? 'kind-hit' : ['OUT', 'DP', 'K', 'FO'].includes(r.id) ? 'kind-out' : 'kind-other');
+  $('#resultBtns').innerHTML = RESULTS.map((r) => `<button class="chip ${kind(r)}" data-id="${r.id}">${r.label}</button>`).join('');
+  $('#quickBtns').innerHTML = QUICK.map((r) => `<button class="chip quick ${kind(r)}" data-id="${r.id}">${r.label}</button>`).join('');
   $('#recordLegend').innerHTML = legendHtml() + '<span>淡色點＝選中打者過去的落點</span>';
 
   $('#gameSelect').addEventListener('change', (e) => {
@@ -590,7 +597,7 @@ function renderAnalysis() {
   if ($('#lyHeat').checked) drawHeat(anLayers.heat, recs);
   if ($('#lyPts').checked) recs.filter(hasPoint).forEach((r) => drawPoint(anLayers.pts, r, false));
   if ($('#lyDef').checked) drawDefense(anLayers.def, recs);
-  $('#analysisLegend').innerHTML = legendHtml() + '<span><i style="background:#0d47a1"></i>建議守備位置（虛線圈＝標準站位）</span>';
+  $('#analysisLegend').innerHTML = legendHtml() + '<span><i style="background:#2563eb"></i>建議守備位置（虛線圈＝標準站位）</span>';
 
   // 統計
   const who = ui.an.playerId ? playerLabel(findById(db.players, ui.an.playerId)) : (findById(teams, ui.an.teamId)?.name ?? '');
@@ -599,14 +606,15 @@ function renderAnalysis() {
     ['打席', s.pa], ['打數', s.ab], ['安打', s.h], ['打擊率', fmtRate(s.h, s.ab)],
     ['長打率', fmtRate(s.tb, s.ab)], ['全壘打', s.hr], ['三振', s.k], ['四壞', s.bb],
   ];
-  $('#statTiles').innerHTML = tiles.map(([k, v]) => `<div class="tile"><b>${v}</b><span>${k}</span></div>`).join('');
+  $('#statTiles').innerHTML = tiles.map(([k, v]) =>
+    `<div class="tile${['打擊率', '長打率'].includes(k) ? ' key' : ''}"><b>${v}</b><span>${k}</span></div>`).join('');
   $('#insight').innerHTML = s.pa ? insightText(s) : '目前沒有符合條件的紀錄。';
 
   $('#typeBars').innerHTML = barsHtml(TYPES.map((t) => ({ label: t.label, n: s.types[t.id], color: t.color })), s.bip);
   $('#dirBars').innerHTML = barsHtml([
-    { label: '左外野側', n: s.dir.L, color: '#2e7d32' },
-    { label: '中間', n: s.dir.C, color: '#2e7d32' },
-    { label: '右外野側', n: s.dir.R, color: '#2e7d32' },
+    { label: '左外野側', n: s.dir.L, color: 'var(--accent)' },
+    { label: '中間', n: s.dir.C, color: 'var(--accent)' },
+    { label: '右外野側', n: s.dir.R, color: 'var(--accent)' },
   ], s.bip);
 
   // 全隊一覽
